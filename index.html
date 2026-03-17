@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex, notranslate, nocache">
+    <meta name="googlebot" content="noindex, nofollow">
+    <meta name="bingbot" content="noindex, nofollow">
+    <meta property="og:type" content="none">
+    <meta name="twitter:card" content="none">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sergio Dev | Python Developer Portfolio</title>
+    <meta name="description"
+        content="Portfolio profesional de Desarrollador Python - Full Stack Developer especializado en Django, FastAPI y soluciones escalables.">
+
+    <!-- DNS prefetch + Preconnect para recursos externos críticos -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="dns-prefetch" href="https://api.github.com">
+    <link rel="dns-prefetch" href="https://unpkg.com">
+
+    <!--
+        FIX #4: Eliminado lucide-static CSS (era una carga duplicada).
+        Solo se usa lucide UMD al final del body.
+
+        FIX #5: Google Fonts carga async para no bloquear render.
+        media="print" + onload trick es el patrón recomendado por web.dev.
+    -->
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+        media="print" onload="this.media='all'">
+    <noscript>
+        <link rel="stylesheet"
+            href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
+    </noscript>
+
+    <link rel="stylesheet" href="root/styles.css">
+</head>
+
+<body>
+    <!-- Navigation -->
+    <header class="header" id="header">
+        <nav class="nav container">
+            <a href="#" class="nav-logo">
+                <i data-lucide="terminal" class="logo-icon"></i>
+                <span class="logo-text">sergio<span class="accent">_dev</span></span>
+            </a>
+
+            <button class="mobile-toggle" id="mobile-toggle" aria-label="Toggle menu" aria-expanded="false">
+                <i data-lucide="menu" class="menu-icon"></i>
+                <i data-lucide="x" class="close-icon"></i>
+            </button>
+
+            <ul class="nav-links" id="nav-links">
+                <li><a href="#about" class="nav-link">Sobre mí</a></li>
+                <li><a href="#experience" class="nav-link">Experiencia</a></li>
+                <li><a href="#formacion" class="nav-link">Formación</a></li>
+                <li><a href="#projects" class="nav-link">Proyectos</a></li>
+                <!-- <li><a href="#skills" class="nav-link">Skills</a></li> -->
+                <li><a href="#contact" class="nav-link">Contacto</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <!-- Hero Section -->
+        <section class="hero" id="hero">
+            <div class="container">
+                <div class="hero-content">
+                    <div class="hero-info">
+                        <h1 class="hero-name">Sergio <span class="accent">Developer</span></h1>
+                        <p class="hero-title">Desarrollador Python | Automatización &amp; IA</p>
+                        <p class="hero-bio">
+                            Especializado en automatización de procesos, y aplicación de IA generativa.
+                            </br>
+                            Enfocado en soluciones eficientes, mantenibles y técnicas robustas.
+                        </p>
+                        <!-- <div class="hero-location">
+                            <i data-lucide="map-pin" class="location-icon"></i>
+                            <span>Madrid, España</span>
+                        </div>
+                        <div class="hero-social">
+                            <a href="https://github.com/ROKO108" target="_blank" rel="noopener noreferrer"
+                                class="social-link" aria-label="GitHub">
+                                <i data-lucide="github" class="social-icon"></i>
+                            </a>
+                        </div> -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- About Section -->
+        <section class="about" id="about">
+            <div class="container">
+                <div class="section-header">
+                    <i data-lucide="user" class="section-icon"></i>
+                    <h2 class="section-title">Sobre mí</h2>
+                </div>
+                <div class="about-content">
+                    <div class="about-text">
+                        <p>Desarrollador Python especializado en automatización y optimización de procesos, con
+                            experiencia en estructuración de
+                            sistemas y aplicación de IA generativa; perfil analítico orientado a la eficiencia,
+                            mantenibilidad y desarrollo de
+                            soluciones técnicas robustas.
+                        </p>
+                        <p>
+                            Más de 3 años de experiencia en desarrollo con Python y automatización, con especialización
+                            en manipulación de AST y
+                            generación dinámica de código, además de experiencia en diseño de arquitecturas modulares y
+                            separación por capas, manejo
+                            de bases de datos relacionales como MySQL y SQL Server, y aplicación de IA generativa junto
+                            con técnicas de prompt
+                            engineering.
+                        </p>
+                        <div class="about-highlights">
+                            <div class="highlight-item">
+                                <i data-lucide="code-2" class="highlight-icon"></i>
+                                <span>Automatización</span>
+                            </div>
+                            <div class="highlight-item">
+                                <i data-lucide="file-code" class="highlight-icon"></i>
+                                <span>Python</span>
+                            </div>
+                            <div class="highlight-item">
+                                <i data-lucide="cpu" class="highlight-icon"></i>
+                                <span>IA Generativa</span>
+                            </div>
+                            <div class="highlight-item">
+                                <i data-lucide="shield-check" class="highlight-icon"></i>
+                                <span>Certificaciones</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- <div class="about-stats">
+                        <div class="stat-card">
+                            <span class="stat-number">5+</span>
+                            <span class="stat-label">Años de experiencia</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-number">20+</span>
+                            <span class="stat-label">Proyectos completados</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-number">15+</span>
+                            <span class="stat-label">Clientes satisfechos</span>
+                        </div>
+                    </div> -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Experience Section -->
+        <section class="experience" id="experience">
+            <div class="container">
+                <div class="section-header">
+                    <i data-lucide="briefcase" class="section-icon"></i>
+                    <h2 class="section-title">Experiencia Laboral</h2>
+                </div>
+                <div class="experience-content">
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-marker"></div>
+                            <div class="timeline-content">
+                                <span class="timeline-date">Dic 2014 - Ene 2015</span>
+                                <h3 class="timeline-title">Asesor Técnico</h3>
+                                <span class="timeline-company">FNAC</span>
+                                <p class="timeline-description">Asesoramiento técnico en equipos informáticos.
+                                    Diagnóstico y reparación de hardware.</p>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker"></div>
+                            <div class="timeline-content">
+                                <span class="timeline-date">Jul 2018 - Abr 2020</span>
+                                <h3 class="timeline-title">Desarrollador Software</h3>
+                                <span class="timeline-company">Deister Consulting</span>
+                                <p class="timeline-description">Desarrollo y mantenimiento de soluciones software.
+                                    Diseño y administración de bases de datos MySQL. Soporte técnico de segundo nivel.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker"></div>
+                            <div class="timeline-content">
+                                <span class="timeline-date">Oct 2020 - Sep 2023</span>
+                                <h3 class="timeline-title">Consultor Web Independiente</h3>
+                                <span class="timeline-company">Freelance</span>
+                                <p class="timeline-description">Implementación y administración de entornos CMS
+                                    (WordPress). Configuración de servidores Apache, dominios, DNS, SSL. Administración
+                                    MySQL y optimización de consultas.</p>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker"></div>
+                            <div class="timeline-content">
+                                <span class="timeline-date">Ene 2025 - Jul 2025</span>
+                                <h3 class="timeline-title">Administrador de Sistemas</h3>
+                                <span class="timeline-company">LogiRail</span>
+                                <p class="timeline-description">Administración técnica de sistemas CCTV en entorno
+                                    ferroviario. Gestión remota de control de accesos: configuración y diagnóstico.
+                                    Monitorización operativa y mantenimiento preventivo.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Formación Section -->
+        <section class="formacion" id="formacion">
+            <div class="container">
+                <div class="section-header">
+                    <i data-lucide="graduation-cap" class="section-icon"></i>
+                    <h2 class="section-title">Formación &amp; Certificaciones</h2>
+                </div>
+                <div class="formacion-content">
+                    <div class="formacion-item">
+                        <i data-lucide="book-open" class="formacion-icon"></i>
+                        <div class="formacion-details">
+                            <h3 class="formacion-title">Administración de Sistemas Informáticos en Red</h3>
+                            <span class="formacion-subtitle">FP Grado Superior - Padre Piquer</span>
+                            <span class="formacion-year">2018</span>
+                        </div>
+                    </div>
+                    <div class="formacion-item">
+                        <i data-lucide="book-open" class="formacion-icon"></i>
+                        <div class="formacion-details">
+                            <h3 class="formacion-title">Instalación de Telecomunicaciones</h3>
+                            <span class="formacion-subtitle">FP Grado Medio - Padre Piquer</span>
+                            <span class="formacion-year">2014</span>
+                        </div>
+                    </div>
+                    <div class="formacion-item">
+                        <i data-lucide="award" class="formacion-icon"></i>
+                        <div class="formacion-details">
+                            <h3 class="formacion-title">Certificaciones</h3>
+                            <span class="formacion-subtitle">PCEP (Python), Cisco Python Fundamentals, Udemy Python
+                                20h</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Projects Section -->
+        <section class="projects" id="projects">
+            <div class="container">
+                <div class="section-header">
+                    <i data-lucide="folder-git" class="section-icon"></i>
+                    <h2 class="section-title">Proyectos Destacados</h2>
+                </div>
+                <div class="projects-grid" id="projects-grid">
+                    <!-- Project cards will be injected by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Skills Section -->
+        <!--
+        <section class="skills" id="skills">
+            <div class="container">
+                <div class="section-header">
+                    <i data-lucide="wrench" class="section-icon"></i>
+                    <h2 class="section-title">Habilidades Técnicas</h2>
+                </div>
+                <div class="skills-content">
+                    <div class="skills-category">
+                        <h3 class="category-title">
+                            <i data-lucide="file-code" class="category-icon"></i>
+                            Lenguajes
+                        </h3>
+                        <div class="skills-list">
+                            <div class="skill-item">
+                                <div class="skill-icon python"><i data-lucide="file-code"></i></div>
+                                <span class="skill-name">Python</span>
+                                <div class="skill-bar">
+                                    <div class="skill-progress" style="width: 95%"></div>
+                                </div>
+                            </div>
+                            <div class="skill-item">
+                                <div class="skill-icon sql"><i data-lucide="database"></i></div>
+                                <span class="skill-name">SQL</span>
+                                <div class="skill-bar">
+                                    <div class="skill-progress" style="width: 75%"></div>
+                                </div>
+                            </div>
+                            <div class="skill-item">
+                                <div class="skill-icon bash"><i data-lucide="terminal"></i></div>
+                                <span class="skill-name">Bash/Shell</span>
+                                <div class="skill-bar">
+                                    <div class="skill-progress" style="width: 60%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="skills-category">
+                        <h3 class="category-title">
+                            <i data-lucide="server" class="category-icon"></i>
+                            SO &amp; Backend
+                        </h3>
+                        <div class="skills-tags">
+                            <span class="skill-tag"><i data-lucide="check" class="tag-icon"></i> Automatización de
+                                tareas</span>
+                            <span class="skill-tag"><i data-lucide="check" class="tag-icon"></i> Manipulación AST</span>
+                            <span class="skill-tag"><i data-lucide="check" class="tag-icon"></i> Generación de
+                                código</span>
+                            <span class="skill-tag"><i data-lucide="check" class="tag-icon"></i> MySQL</span>
+                            <span class="skill-tag"><i data-lucide="check" class="tag-icon"></i> Apache/Nginx</span>
+                            <span class="skill-tag"><i data-lucide="check" class="tag-icon"></i> Linux</span>
+                            <span class="skill-tag"><i data-lucide="check" class="tag-icon"></i> Windows</span>
+                        </div>
+                    </div>
+
+                    <div class="skills-category">
+                        <h3 class="category-title">
+                            <i data-lucide="layout" class="category-icon"></i>
+                            Frontend
+                        </h3>
+                        <div class="skills-tags">
+                            <span class="skill-tag"><i data-lucide="check" class="tag-icon"></i> HTML</span>
+                            <span class="skill-tag"><i data-lucide="check" class="tag-icon"></i> CSS</span>
+                            <span class="skill-tag"><i data-lucide="check" class="tag-icon"></i> WordPress</span>
+                        </div>
+                    </div>
+
+                    <div class="skills-category">
+                        <h3 class="category-title">
+                            <i data-lucide="hard-drive" class="category-icon"></i>
+                            Bases de Datos &amp; Cloud
+                        </h3>
+                        <div class="skills-tags">
+                            <span class="skill-tag"><i data-lucide="check" class="tag-icon"></i> MySQL</span>
+                            <span class="skill-tag"><i data-lucide="check" class="tag-icon"></i> DBeaver</span>
+                            <span class="skill-tag"><i data-lucide="check" class="tag-icon"></i> XAMPP</span>
+                        </div>
+                    </div>
+
+                    <div class="skills-category">
+                        <h3 class="category-title">
+                            <i data-lucide="box" class="category-icon"></i>
+                            Herramientas
+                        </h3>
+                        <div class="skills-tags">
+                            <span class="skill-tag"><i data-lucide="check" class="tag-icon"></i> VMware</span>
+                            <span class="skill-tag"><i data-lucide="check" class="tag-icon"></i> Terminal</span>
+                            <span class="skill-tag"><i data-lucide="check" class="tag-icon"></i> Git</span>
+                        </div>
+                    </div>
+
+                    <div class="skills-category">
+                        <h3 class="category-title">
+                            <i data-lucide="brain" class="category-icon"></i>
+                            IA Aplicada
+                        </h3>
+                        <div class="skills-tags">
+                            <span class="skill-tag"><i data-lucide="check" class="tag-icon"></i> Prompt
+                                Engineering</span>
+                            <span class="skill-tag"><i data-lucide="check" class="tag-icon"></i> Agentes LLM</span>
+                            <span class="skill-tag"><i data-lucide="check" class="tag-icon"></i> Integración IA</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        -->
+
+        <!-- Contact Section -->
+
+        <section class="contact" id="contact">
+            <div class="container">
+                <div class="section-header">
+                    <i data-lucide="mail" class="section-icon"></i>
+                    <h2 class="section-title">Contacto</h2>
+                </div>
+                <div class="contact-content">
+                    <div class="contact-info">
+                        <h3 class="contact-subtitle">¿Tienes un proyecto en mente?</h3>
+                        <p class="contact-text">Estoy disponible para trabajos freelance y colaboraciones. Si tienes
+                            alguna pregunta o quieres discutir un proyecto, no dudes en contactarme.</p>
+                        <div class="contact-methods">
+                            <div class="contact-method">
+                                <i data-lucide="map-pin" class="method-icon"></i>
+                                <div>
+                                    <span class="method-label">Ubicación</span>
+                                    <span class="method-value">Madrid, España</span>
+                                </div>
+                            </div>
+                            <div class="contact-method">
+                                <i data-lucide="briefcase" class="method-icon"></i>
+                                <div>
+                                    <span class="method-label">Disponibilidad</span>
+                                    <span class="method-value availability">Abierto a propuestas</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <form class="contact-form" id="contact-form" novalidate
+                        action="https://docs.google.com/forms/d/e/1FAIpQLSdG1VX_GmH1ID7LlE_zzRV-uB-1QhyQIbTU1X0kDvJwrY1myg/formResponse"
+                        method="POST" target="hidden_iframe">
+                        <div class="form-group">
+                            <label for="name" class="form-label">Nombre</label>
+                            <input type="text" id="name" name="entry.513310454" class="form-input" required
+                                placeholder="Tu nombre" autocomplete="name">
+                        </div>
+                        <div class="form-group">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" id="email" name="entry.639366897" class="form-input" required
+                                placeholder="tu@email.com" autocomplete="email">
+                        </div>
+                        <div class="form-group">
+                            <label for="message" class="form-label">Mensaje</label>
+                            <textarea id="message" name="entry.2124485733" class="form-input form-textarea" required
+                                placeholder="Describe tu proyecto..."></textarea>
+                        </div>
+                        <button type="submit" class="form-submit">
+                            <i data-lucide="send" class="submit-icon"></i>
+                            <span>Enviar mensaje</span>
+                        </button>
+                    </form>
+                    <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <!-- <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <p class="footer-copy">© 2025 Sergio</p>
+                <div class="footer-links">
+                    <a href="https://github.com/ROKO108" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
+                        <i data-lucide="github" class="footer-link-icon"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer> -->
+
+    <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js" defer></script>
+    <script src="root/script.js" defer></script>
+</body>
+
+</html>

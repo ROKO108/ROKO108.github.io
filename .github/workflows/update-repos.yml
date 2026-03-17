@@ -1,0 +1,39 @@
+name: Update Repos JSON
+on:
+  schedule:
+    - cron: '0 */8 * * *'
+  workflow_dispatch:      
+
+jobs:
+  update-json:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Fetch GitHub Repos
+        run: |
+          # Aseguramos que la carpeta root exista
+          mkdir -p root
+          # Guardamos el JSON dentro de la carpeta root
+          curl -s "https://api.github.com/users/ROKO108/repos?sort=updated&direction=desc&per_page=100" > root/repos.json
+
+      - name: Commit and Push
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Añadimos específicamente el archivo dentro de la carpeta root
+          git add root/repos.json
+          
+          if git diff --quiet && git diff --staged --quiet; then
+            echo "Sin cambios detectados en root/repos.json."
+          else
+            git commit -m "Sync: Repositorios actualizados en /root"
+            git push
+          fi

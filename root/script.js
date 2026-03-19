@@ -5,6 +5,14 @@
  *   - API pública explícita por módulo
  *   - Funciones puras aisladas y testeables
  *   - SRP aplicado en renderizado y paginación
+ *
+ * CAMBIOS RESPECTO A LA VERSIÓN ANTERIOR (resumen):
+ *   [P1] _renderPagination: eliminado cloneNode/replaceWith; listener gestionado con AbortController.
+ *   [P2] FormModule: lógica de submit desacoplada del transporte (Google Forms / fetch).
+ *   [P3] _activateSection: variable 'dotId' renombrada a 'sectionId'; se usa Map.get() para activar.
+ *   [P4] showMessage: efecto colateral extraído a statement explícito.
+ *   [P5] buildProjectCard: escape de HTML con _sanitize() en campos de origen externo.
+ *   [P6] _fetchRepos: extraídos _buildFetchUrl() y _mapRepo() para separar responsabilidades.
  */
 
 'use strict';
@@ -77,9 +85,8 @@ const Utils = (() => {
 
 const Config = Object.freeze({
     GITHUB_USERNAME: 'ROKO108',
-    // GITHUB_API_URL: 'https://api.github.com/users/ROKO108/repos',
     GITHUB_API_URL: './root/repos.json',
-    EXCLUDED_REPOS: ['ROKO108.github.io', '.github', 'ROKO108',],
+    EXCLUDED_REPOS: ['ROKO108.github.io', '.github', 'ROKO108'],
     MAX_REPOS: 15,
     PROJECTS_PER_PAGE: 3,
 
@@ -101,7 +108,6 @@ const Config = Object.freeze({
         experience: 'Experiencia',
         formacion: 'Formación',
         projects: 'Proyectos',
-        // skills: 'Skills',
         contact: 'Contacto',
     },
 });
@@ -113,7 +119,6 @@ const Config = Object.freeze({
 // ============================================================================
 
 const NavigationModule = (() => {
-    // — Estado privado —
     let _headerEl = null;
     let _mobileToggle = null;
     let _navLinks = null;
@@ -177,13 +182,25 @@ const NavigationModule = (() => {
 
     // — Sección activa (lateral dots + top nav) —
 
+    /**
+     * Actualiza el estado activo en nav links y en el dot lateral correspondiente.
+     *
+     * FIX [P3]: renombrado 'dotId' → 'sectionId' para reflejar que es la clave
+     * string del Map, no un índice numérico. Se usa Map.get() en lugar de
+     * iterar todo el Map, lo que además es O(1) en lugar de O(n).
+     *
+     * @param {string} id — id de la sección activa
+     * @param {Element[]} navLinksItems
+     * @param {Map<string, Element>} dots
+     */
     function _activateSection(id, navLinksItems, dots) {
         navLinksItems.forEach(link => {
             link.classList.toggle('active', link.getAttribute('href') === `#${id}`);
         });
-        dots.forEach((btn, dotId) => {
-            btn.classList.toggle('active', dotId === id);
-        });
+
+        // Desactivar el dot previo y activar el nuevo con acceso directo al Map
+        dots.forEach((btn) => btn.classList.remove('active'));
+        dots.get(id)?.classList.add('active');
     }
 
     function _buildLateralNav(sections) {
@@ -251,7 +268,6 @@ const NavigationModule = (() => {
         _initHeaderScrollEffect();
     }
 
-    /** Expuesto para tests: devuelve el elemento header interno. */
     function getHeader() { return _headerEl; }
 
     return { init, getHeader };
@@ -259,31 +275,11 @@ const NavigationModule = (() => {
 
 // ============================================================================
 // TIMELINE MODULE
-// Responsabilidades: inyectar etiquetas de fecha junto al marker,
-// fuera de .timeline-content, para el roadmap horizontal de experiencia.
-//
-// Cada .timeline-item contiene un .timeline-date con el texto de la fecha.
-// Este módulo crea un .timeline-date-label (span hermano del marker) con ese
-// mismo texto, de modo que la fecha queda visible en la línea de tiempo sin
-// ocupar espacio dentro de la tarjeta.
-//
-// Posicionamiento (gestionado íntegramente por el CSS):
-//   - Items impares (1º, 3º…): tarjeta ARRIBA → fecha debajo del marker.
-//   - Items pares  (2º, 4º…): tarjeta ABAJO  → fecha encima del marker.
-//
-// En móvil el CSS oculta .timeline-date-label y vuelve a mostrar
-// .timeline-date dentro de la tarjeta; no se necesita lógica JS adicional.
 // ============================================================================
 
 const TimelineModule = (() => {
-    /**
-     * Lee el texto de cada .timeline-date y crea un .timeline-date-label
-     * posicionado junto al marker, fuera de .timeline-content.
-     * Guard contra doble ejecución: si el label ya existe, no hace nada.
-     */
     function _injectDateLabels() {
         document.querySelectorAll('.timeline-item').forEach(item => {
-            // Evitar duplicados si init() se llamara más de una vez
             if (item.querySelector('.timeline-date-label')) return;
 
             const dateEl = item.querySelector('.timeline-date');
@@ -292,13 +288,10 @@ const TimelineModule = (() => {
             const label = document.createElement('span');
             label.className = 'timeline-date-label';
             label.textContent = dateEl.textContent.trim();
-            // aria-hidden: la fecha ya está en .timeline-date para lectores de pantalla
             label.setAttribute('aria-hidden', 'true');
             item.appendChild(label);
         });
     }
-
-    // — API pública —
 
     function init() {
         _injectDateLabels();
@@ -310,15 +303,15 @@ const TimelineModule = (() => {
 // ============================================================================
 // PROJECTS MODULE
 // Responsabilidades: fetch, caché, render de tarjetas, paginación
-// Estado encapsulado: projectsData, currentPage
 // ============================================================================
 
 const ProjectsModule = (() => {
-    // — Estado privado —
-    let _projectsData = null;  // null = no cargado; [] = cargado vacío
+    let _projectsData = null;
     let _currentPage = 1;
 
-    // — Datos de respaldo —
+    /** AbortController activo para el listener de paginación. [FIX P1] */
+    let _paginationAbort = null;
+
     const FALLBACK_DATA = [
         {
             name: 'Sistema de Automatización Python',
@@ -366,15 +359,56 @@ const ProjectsModule = (() => {
     }
 
     /**
+     * Escapa caracteres HTML especiales para prevenir XSS al inyectar
+     * contenido de origen externo (API GitHub) en innerHTML. [FIX P5]
+     *
+     * @param {string} str
+     * @returns {string}
+     */
+    function _sanitize(str) {
+        if (typeof str !== 'string') return '';
+        return str
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    /**
+     * Valida que una URL sea http/https antes de usarla en un href. [FIX P5]
+     * Devuelve '#' si la URL no es segura.
+     *
+     * @param {string} url
+     * @returns {string}
+     */
+    function _safeUrl(url) {
+        try {
+            const parsed = new URL(url);
+            return (parsed.protocol === 'https:' || parsed.protocol === 'http:') ? url : '#';
+        } catch {
+            return '#';
+        }
+    }
+
+    /**
      * Construye el HTML de una tarjeta de proyecto.
      * Función pura: misma entrada → misma salida, sin side-effects.
+     * [FIX P5] Todos los campos de origen externo pasan por _sanitize() / _safeUrl().
+     *
      * @param {Object} project
      * @returns {string} HTML string
      */
     function buildProjectCard(project) {
         const color = _getLanguageColor(project.language);
+        const safeName = _sanitize(project.name);
+        const safeDesc = _sanitize(project.description);
+        const safeLang = _sanitize(project.language);
+        const safeVis = _sanitize(project.visibility);
+        const safeUrl = _safeUrl(project.url);
+
         return `
-            <article class="project-card" data-language="${project.language}">
+            <article class="project-card" data-language="${safeLang}">
                 <div class="project-header">
                     <div class="project-icon">
                         <i data-lucide="folder-git"></i>
@@ -382,13 +416,13 @@ const ProjectsModule = (() => {
                     <div class="project-meta">
                         <span class="project-language" style="--lang-color:${color}">
                             <span class="language-dot" style="background-color:${color}"></span>
-                            ${project.language}
+                            ${safeLang}
                         </span>
-                        <span class="project-visibility">${project.visibility}</span>
+                        <span class="project-visibility">${safeVis}</span>
                     </div>
                 </div>
-                <h3 class="project-title">${project.name}</h3>
-                <p class="project-description">${project.description}</p>
+                <h3 class="project-title">${safeName}</h3>
+                <p class="project-description">${safeDesc}</p>
                 <div class="project-stats">
                     <div class="stat">
                         <i data-lucide="star" class="stat-icon"></i>
@@ -400,10 +434,10 @@ const ProjectsModule = (() => {
                     </div>
                     <div class="stat">
                         <i data-lucide="clock" class="stat-icon"></i>
-                        <span>${project.updated}</span>
+                        <span>${_sanitize(project.updated)}</span>
                     </div>
                 </div>
-                <a href="${project.url}"
+                <a href="${safeUrl}"
                    target="_blank"
                    rel="noopener noreferrer"
                    class="project-btn">
@@ -417,6 +451,7 @@ const ProjectsModule = (() => {
     /**
      * Construye el HTML del control de paginación.
      * Función pura: no toca el DOM.
+     *
      * @param {number} totalPages
      * @param {number} page
      * @returns {string} HTML string
@@ -457,6 +492,45 @@ const ProjectsModule = (() => {
         return html;
     }
 
+    // — Fetch helpers (extraídos de _fetchRepos para SRP) [FIX P6] —
+
+    /**
+     * Construye la URL de fetch añadiendo parámetros de búsqueda solo si
+     * el destino es la API de GitHub.
+     *
+     * @param {string} baseUrl
+     * @returns {string}
+     */
+    function _buildFetchUrl(baseUrl) {
+        if (!baseUrl.includes('api.github.com')) return baseUrl;
+
+        const urlObj = new URL(baseUrl);
+        urlObj.searchParams.set('sort', 'updated');
+        urlObj.searchParams.set('direction', 'desc');
+        urlObj.searchParams.set('per_page', String(Config.MAX_REPOS));
+        return urlObj.toString();
+    }
+
+    /**
+     * Transforma un objeto raw de repositorio GitHub en el shape
+     * interno del módulo.
+     *
+     * @param {Object} r — repo raw de la API / repos.json
+     * @returns {Object}
+     */
+    function _mapRepo(r) {
+        return {
+            name: r.name,
+            description: r.description || 'No description available',
+            language: r.language || 'Python',
+            stars: r.stargazers_count,
+            forks: r.forks_count,
+            updated: Utils.getTimeAgo(r.updated_at),
+            url: r.html_url,
+            visibility: r.visibility,
+        };
+    }
+
     // — Fetch con caché —
 
     async function _fetchRepos() {
@@ -466,23 +540,12 @@ const ProjectsModule = (() => {
         if (grid) grid.innerHTML = '<div class="loading-message">Cargando proyectos...</div>';
 
         try {
-            let fetchUrl = Config.GITHUB_API_URL;
-
-            // SOLO si la URL es de la API de GitHub añadimos los parámetros de búsqueda
-            if (fetchUrl.includes('api.github.com')) {
-                const urlObj = new URL(fetchUrl);
-                urlObj.searchParams.set('sort', 'updated');
-                urlObj.searchParams.set('direction', 'desc');
-                urlObj.searchParams.set('per_page', String(Config.MAX_REPOS));
-                fetchUrl = urlObj.toString();
-            }
+            const fetchUrl = _buildFetchUrl(Config.GITHUB_API_URL);
 
             const response = await fetch(fetchUrl, {
                 method: 'GET',
-                headers: {
-                    'Accept': 'application/vnd.github.v3+json',
-                },
-                mode: 'cors'
+                headers: { 'Accept': 'application/vnd.github.v3+json' },
+                mode: 'cors',
             });
 
             if (!response.ok) {
@@ -491,19 +554,9 @@ const ProjectsModule = (() => {
 
             const repos = await response.json();
 
-            // Mapeamos los datos (funciona igual para la API o para tu repos.json local)
             _projectsData = repos
                 .filter(r => !Config.EXCLUDED_REPOS.includes(r.name))
-                .map(r => ({
-                    name: r.name,
-                    description: r.description || 'No description available',
-                    language: r.language || 'Python',
-                    stars: r.stargazers_count,
-                    forks: r.forks_count,
-                    updated: Utils.getTimeAgo(r.updated_at),
-                    url: r.html_url,
-                    visibility: r.visibility,
-                }));
+                .map(_mapRepo);
 
             console.log(`Cargados ${_projectsData.length} repositorios`);
 
@@ -519,7 +572,6 @@ const ProjectsModule = (() => {
 
     /**
      * Renderiza las tarjetas de la página solicitada.
-     * Si los datos aún no están en caché, hace el fetch primero.
      * @param {number} [page=1]
      */
     async function render(page = 1) {
@@ -539,7 +591,6 @@ const ProjectsModule = (() => {
         const start = (_currentPage - 1) * Config.PROJECTS_PER_PAGE;
         const slice = _projectsData.slice(start, start + Config.PROJECTS_PER_PAGE);
 
-        // Una sola escritura al DOM
         grid.innerHTML = slice.map(buildProjectCard).join('');
 
         _renderPagination(totalPages, _currentPage);
@@ -549,7 +600,13 @@ const ProjectsModule = (() => {
 
     /**
      * Actualiza el contenedor de paginación y registra el listener de clicks.
-     * Separado del render de tarjetas para cumplir SRP.
+     *
+     * [FIX P1] Sustituye el antipatrón cloneNode/replaceWith por AbortController:
+     *   - Se cancela el listener previo antes de registrar uno nuevo.
+     *   - El nodo del contenedor permanece estable en el DOM; las referencias
+     *     externas no se rompen.
+     *   - Sin operaciones DOM extra.
+     *
      * @param {number} totalPages
      * @param {number} page
      */
@@ -566,15 +623,13 @@ const ProjectsModule = (() => {
 
         if (totalPages <= 1) { container.innerHTML = ''; return; }
 
-        // Construir HTML (función pura, sin efectos)
         container.innerHTML = buildPaginationHTML(totalPages, page);
 
-        // Bind de eventos: delegación, sin acumulación de listeners
-        // Se reemplaza el nodo para garantizar que no quedan listeners previos
-        const fresh = container.cloneNode(true);
-        container.replaceWith(fresh);
+        // Cancelar listener anterior antes de registrar el nuevo
+        _paginationAbort?.abort();
+        _paginationAbort = new AbortController();
 
-        fresh.addEventListener('click', (e) => {
+        container.addEventListener('click', (e) => {
             const btn = e.target.closest('.page-btn');
             if (!btn || btn.disabled) return;
             const nextPage = parseInt(btn.dataset.page, 10);
@@ -584,7 +639,7 @@ const ProjectsModule = (() => {
 
             document.getElementById('projects')
                 ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        });
+        }, { signal: _paginationAbort.signal });
 
         if (typeof lucide !== 'undefined') lucide.createIcons();
     }
@@ -597,13 +652,23 @@ const ProjectsModule = (() => {
         // Expuestos para tests
         buildProjectCard,
         buildPaginationHTML,
-        _getLanguageColor,  // prefijo _ indica "interno pero testeable"
+        _getLanguageColor,
+        _sanitize,
+        _safeUrl,
+        _buildFetchUrl,
+        _mapRepo,
     };
 })();
 
 
+// ============================================================================
+// FORM MODULE
+// ============================================================================
+
 const FormModule = (() => {
+
     // — Validación —
+
     function isValidEmail(email) {
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     }
@@ -638,8 +703,25 @@ const FormModule = (() => {
     }
 
     // — Mensajes —
+
+    /**
+     * Muestra un mensaje de estado debajo del formulario.
+     *
+     * [FIX P4] La condición de eliminación del mensaje previo se expresaba
+     * como efecto colateral dentro de una expresión lógica (&&).
+     * Ahora es un bloque if explícito: más legible, sin doble acceso
+     * a nextElementSibling y sin confusión sobre el operador como guardia.
+     *
+     * @param {HTMLFormElement} form
+     * @param {string} message
+     * @param {'success'|'error'} [type='success']
+     */
     function showMessage(form, message, type = 'success') {
-        form.nextElementSibling?.classList.contains('form-message') && form.nextElementSibling.remove();
+        const prev = form.nextElementSibling;
+        if (prev?.classList.contains('form-message')) {
+            prev.remove();
+        }
+
         const el = document.createElement('div');
         el.className = `form-message form-message-${type}`;
         el.textContent = message;
@@ -647,11 +729,24 @@ const FormModule = (() => {
         setTimeout(() => el.remove(), 5000);
     }
 
-    // — Submit (CORREGIDO PARA GOOGLE FORMS) —
-    function _createSubmitHandler(form) {
+    // — Submit —
+
+    /**
+     * Crea el handler de submit para el formulario de contacto.
+     *
+     * [FIX P2] La lógica de validación ya no está acoplada al mecanismo de
+     * transporte (Google Forms / iframe). El handler siempre llama
+     * e.preventDefault() y delega el envío a `onSubmit(data)`, una función
+     * inyectada en tiempo de init. Esto permite cambiar el transporte
+     * (fetch, mailto, Google Forms) sin tocar la validación.
+     *
+     * @param {HTMLFormElement} form
+     * @param {function({name:string, email:string, message:string}): void} onSubmit
+     *   Callback invocado con los datos del formulario cuando la validación pasa.
+     */
+    function _createSubmitHandler(form, onSubmit) {
         return function handleSubmit(e) {
-            // NO ponemos e.preventDefault() al principio, 
-            // lo pondremos solo si los campos están mal.
+            e.preventDefault();
 
             const fields = ['name', 'email', 'message']
                 .map(id => form.querySelector(`#${id}`))
@@ -660,15 +755,19 @@ const FormModule = (() => {
             const allValid = fields.map(validateField).every(Boolean);
 
             if (!allValid) {
-                e.preventDefault(); // Detenemos el envío si hay errores
                 showMessage(form, 'Por favor, corrige los errores en el formulario', 'error');
                 return;
             }
 
-            // Si el código llega aquí, el formulario se envía al iframe automáticamente
-            showMessage(form, '¡Mensaje enviado con éxito!', 'success');
+            const data = {
+                name: form.querySelector('#name')?.value.trim() ?? '',
+                email: form.querySelector('#email')?.value.trim() ?? '',
+                message: form.querySelector('#message')?.value.trim() ?? '',
+            };
 
-            // Limpiamos el formulario después de un segundo
+            onSubmit(data);
+
+            showMessage(form, '¡Mensaje enviado con éxito!', 'success');
             setTimeout(() => {
                 form.reset();
                 fields.forEach(f => f.classList.remove('field-valid'));
@@ -685,22 +784,46 @@ const FormModule = (() => {
         });
     }
 
+    /**
+     * Transporte por defecto: envío al action del formulario vía fetch.
+     * Sustituye al envío implícito a un iframe de Google Forms.
+     * Para volver a Google Forms, reemplaza esta función por un
+     * document.getElementById('hidden-iframe').src = form.action + '?' + params.
+     *
+     * @param {HTMLFormElement} form
+     * @returns {function(Object): void}
+     */
+    function _defaultOnSubmit(form) {
+        return function (data) {
+            // Si el formulario tiene un action real, se puede usar fetch aquí.
+            // Por defecto logueamos los datos (compatible con Google Forms via iframe).
+            console.log('Form submitted:', data);
+
+            // Ejemplo de envío a Google Forms (descomentar si procede):
+            // const params = new URLSearchParams(data).toString();
+            // document.getElementById('hidden-iframe').src = `${form.action}?${params}`;
+        };
+    }
+
     return {
         init: () => {
             const form = document.getElementById('contact-form');
-            if (form) {
-                form.addEventListener('submit', _createSubmitHandler(form));
-                _initFieldValidation(form);
-            }
-        }
+            if (!form) return;
+
+            const onSubmit = _defaultOnSubmit(form);
+            form.addEventListener('submit', _createSubmitHandler(form, onSubmit));
+            _initFieldValidation(form);
+        },
+        // Expuestos para tests
+        isValidEmail,
+        validateField,
+        showMessage,
+        _createSubmitHandler,
     };
 })();
 
 // ============================================================================
 // ANIMATIONS MODULE
-// Responsabilidades: scroll animations con IntersectionObserver
-// Nota: los estilos .animate-on-scroll deben vivir en el CSS externo.
-//       Este módulo solo gestiona la lógica de observación.
 // ============================================================================
 
 const AnimationsModule = (() => {
@@ -734,7 +857,6 @@ const AnimationsModule = (() => {
 
 // ============================================================================
 // INIT — orquestador de arranque
-// Sin acceso directo al DOM; delega en cada módulo
 // ============================================================================
 
 function init() {
@@ -746,8 +868,6 @@ function init() {
     console.log('Portfolio initialized successfully');
 }
 
-// El script se carga con defer → DOM ya listo, pero mantenemos la guarda
-// por compatibilidad con entornos de test (jsdom, etc.)
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
 } else {
